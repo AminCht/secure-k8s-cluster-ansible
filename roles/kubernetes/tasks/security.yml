@@ -1,0 +1,79 @@
+- name: Install UFW
+  apt:
+    name: ufw
+    state: present
+
+- name: Reset UFW to default (Ensure clean state)
+  command: ufw --force reset
+  ignore_errors: yes
+
+- name: Default Deny Incoming
+  command: ufw default deny incoming
+
+- name: Default Allow Outgoing
+  command: ufw default allow outgoing
+
+- name: Allow SSH (Port 22)
+  ufw:
+    rule: allow
+    port: '22' 
+    proto: tcp
+
+# Master rules
+- block:
+    - name: Allow API Server (6443) from Workers
+      ufw:
+        rule: allow
+        port: '6443'
+        proto: tcp
+        from_ip: "{{ hostvars[item]['ansible_host'] | default(item) }}"
+      loop: "{{ groups['workers'] }}"
+
+    - name: Allow Etcd (2379-2380) from Workers
+      ufw:
+        rule: allow
+        port: '2379:2380'
+        proto: tcp
+        from_ip: "{{ hostvars[item]['ansible_host'] | default(item) }}"
+      loop: "{{ groups['workers'] }}"
+      
+    - name: Allow Kubelet (10250) from Workers
+      ufw:
+        rule: allow
+        port: '10250'
+        proto: tcp
+        from_ip: "{{ hostvars[item]['ansible_host'] | default(item) }}"
+      loop: "{{ groups['workers'] }}"
+
+    - name: Allow Calico BGP (179) from Workers
+      ufw:
+        rule: allow
+        port: '179'
+        proto: tcp
+        from_ip: "{{ hostvars[item]['ansible_host'] | default(item) }}"
+      loop: "{{ groups['workers'] }}"
+
+  when: inventory_hostname in groups['masters']
+
+# Worker Rules
+- block:
+    - name: Allow Kubelet (10250) from Masters
+      ufw:
+        rule: allow
+        port: '10250'
+        proto: tcp
+        from_ip: "{{ hostvars[item]['ansible_host'] | default(item) }}"
+      loop: "{{ groups['masters'] }}"
+
+    - name: Allow Calico BGP (179) from Masters
+      ufw:
+        rule: allow
+        port: '179'
+        proto: tcp
+        from_ip: "{{ hostvars[item]['ansible_host'] | default(item) }}"
+      loop: "{{ groups['masters'] }}"
+
+  when: inventory_hostname in groups['workers']
+
+- name: Enable UFW
+  command: ufw --force enable
