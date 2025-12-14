@@ -1,0 +1,17 @@
+- name: Check if node is joined
+  stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: worker_check
+
+- name: Join Cluster
+  command: "{{ hostvars['K8S_SHARED_VARS']['token'] }}"
+  when: not worker_check.stat.exists
+
+
+- name: Secure Kubelet on Worker (Disable Anonymous Auth)
+  lineinfile:
+    path: /var/lib/kubelet/config.yaml
+    regexp: 'enabled: true'
+    line: '    enabled: false'
+  ignore_errors: yes
+  notify: Restart Kubelet Worker
