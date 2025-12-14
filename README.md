@@ -99,7 +99,7 @@ all:
 Deploy the entire cluster with a single command:
 
 ```bash
-ansible-playbook -i inventory.yml kubernetes.yml
+ansible-playbook playbook/kubernetes.yml
 ```
 
 The playbook will:
