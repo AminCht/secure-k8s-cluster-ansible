@@ -1,0 +1,32 @@
+all:
+  children:
+    # Master Server
+    Server_Master:
+      hosts:
+        # Replace your master server IP 
+        REPLACE_WITH_MASTER_IP:
+    
+    # Worker Servers
+    Server_Worker:
+      hosts:
+        # # Replace your worker server IPs 
+        REPLACE_WITH_WORKER_1_IP:
+
+        REPLACE_WITH_WORKER_2_IP:
+        # Add more worker servers as needed
+
+    # Master Group
+    masters:
+      children:
+        Server_Master:
+    
+    # Wokers Group
+    workers:
+      children:
+        Server_Worker:
+
+    # All k8s cluster Group Together
+    k8s_cluster:
+      children:
+        masters:
+        workers:
