@@ -1,0 +1,106 @@
+- name: Disable Swap
+  shell: |
+    swapoff -a
+    sed -i '/ swap / s/^\(.*\)$/#\1/g' /etc/fstab
+
+- name: Load Kernel Modules
+  shell: |
+    modprobe overlay
+    modprobe br_netfilter
+    modprobe wireguard
+  
+- name: Setup Sysctl
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_set: yes
+    state: present
+    reload: yes
+  loop:
+    - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+    - { key: 'net.ipv4.ip_forward', value: '1' }
+
+- name: Install Prerequisites
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gpg
+      - software-properties-common
+    state: present
+    update_cache: yes
+
+# --- 1. تنظیمات مخزن Docker (برای containerd.io) ---
+- name: Create keyrings directory
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Add Docker GPG key
+  shell: |
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+- name: Add Docker Repository
+  shell: |
+    echo \
+    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+
+- name: Install Containerd
+  apt:
+    name:
+      - containerd.io
+    state: present
+    update_cache: yes
+# --- 2. تنظیمات مخزن Kubernetes (نسخه 1.29) ---
+# نکته: گوگل مخازن قدیمی (apt.kubernetes.io) را غیرفعال کرده. باید از pkgs.k8s.io استفاده کنیم.
+- name: Download Kubernetes GPG key
+  get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key
+    dest: /tmp/kubernetes-release.key
+    mode: '0644'
+
+- name: Dearmor Kubernetes GPG key
+  shell: |
+    rm -f /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    cat /tmp/kubernetes-release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes Repository
+  shell: |
+    echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+
+# --- 3. نصب پکیج‌ها ---
+- name: Install Containerd, Kubernetes and Security packages
+  apt:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+      - wireguard-tools
+    state: present
+    update_cache: yes
+
+- name: Hold Kubernetes packages (Prevent unwanted upgrades)
+  dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl
+
+# --- 4. تنظیمات Containerd ---
+- name: Configure Containerd default config
+  shell: |
+    mkdir -p /etc/containerd
+    containerd config default > /etc/containerd/config.toml
+
+- name: Enable SystemdCgroup in Containerd
+  shell: |
+    sed -i 's/SystemdCgroup = false/SystemdCgroup = true/g' /etc/containerd/config.toml
+  notify: Restart Containerd
