@@ -1,0 +1,9 @@
+- include_tasks: security.yml
+
+- include_tasks: common.yml
+
+- include_tasks: master.yml
+  when: inventory_hostname in groups['masters']
+
+- include_tasks: worker.yml
+  when: inventory_hostname in groups['workers']
