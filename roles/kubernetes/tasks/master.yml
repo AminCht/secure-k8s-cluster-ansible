@@ -1,0 +1,63 @@
+- name: Check if cluster is initialized
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: k8s_check
+
+- name: Init Kubernetes
+  command: >
+    kubeadm init
+    --apiserver-advertise-address={{ inventory_hostname }}
+    --pod-network-cidr=192.168.0.0/16
+    --control-plane-endpoint={{ inventory_hostname }}
+  when: not k8s_check.stat.exists
+
+- name: Setup kubeconfig for root
+  shell: |
+    mkdir -p /root/.kube
+    cp /etc/kubernetes/admin.conf /root/.kube/config
+    chown root:root /root/.kube/config
+  when: not k8s_check.stat.exists
+
+
+- name: Secure Kubelet (Disable Anonymous Auth)
+  lineinfile:
+    path: /var/lib/kubelet/config.yaml
+    regexp: 'enabled: true'
+    line: '    enabled: false'
+    state: present
+  ignore_errors: yes
+  notify: Restart Kubelet
+
+- name: Install Calico Operator
+  command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/tigera-operator.yaml
+  ignore_errors: yes
+  run_once: true
+
+- name: Install Calico Custom Resources
+  command: kubectl create -f https://raw.githubusercontent.com/projectcalico/calico/v3.27.0/manifests/custom-resources.yaml
+  ignore_errors: yes
+  run_once: true
+
+- name: Wait for Calico to be ready
+  pause:
+    seconds: 30
+
+# For Secure communication between nodes
+- name: Enable Wireguard for Calico
+  command: >
+    kubectl patch felixconfiguration default 
+    --type='merge' 
+    -p '{"spec":{"wireguardEnabled":true}}'
+  environment:
+    KUBECONFIG: /root/.kube/config
+  run_once: true
+  ignore_errors: yes
+
+- name: Get Join Command
+  command: kubeadm token create --print-join-command
+  register: join_cmd_output
+
+- name: Store join command
+  add_host:
+    name: "K8S_SHARED_VARS"
+    token: "{{ join_cmd_output.stdout }}"
