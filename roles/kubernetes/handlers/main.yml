@@ -1,0 +1,14 @@
+- name: Restart Containerd
+  service:
+    name: containerd
+    state: restarted
+
+- name: Restart Kubelet
+  service:
+    name: kubelet
+    state: restarted
+
+- name: Restart Kubelet Worker
+  service:
+    name: kubelet
+    state: restarted
