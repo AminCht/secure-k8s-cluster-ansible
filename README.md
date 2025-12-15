@@ -34,9 +34,14 @@ Unlike standard `kubeadm` setups, this project focuses heavily on **security**, 
 
 ## 📋 Prerequisites
 
-* **Control Node**: Machine with Ansible installed
-* **Target Nodes**: Ubuntu `20.04` or `22.04`
-* **SSH Access**: Root or sudo user with **passwordless SSH (key‑based login)**
+* **Control Node:** A machine to run Ansible (e.g., your laptop or a bastion host) running **Ubuntu 22.04** or newer.
+    * *Requirement:* Python 3 and Ansible installed.
+* **Target Nodes:** Fresh servers running **Ubuntu 20.04 LTS** or **22.04 LTS**.
+    * *Master Node:* Minimum 2 vCPU, 2GB RAM.
+    * *Worker Nodes:* Minimum 1 vCPU, 1GB RAM.
+* **SSH Access:**
+    * `root` user access (or a user with passwordless `sudo`).
+    * **SSH Key-based login** configured (Password authentication should be disabled for security).
 
 ---
 
@@ -54,10 +59,6 @@ cd secure-k8s-cluster-ansible
 ### 2️⃣ Configure Inventory
 
 Copy the example inventory file:
-
-```bash
-cp inventory.example.yml inventory.yml
-```
 
 Edit `inventory.yml` and replace the placeholder IPs with your actual server IPs:
 
@@ -179,3 +180,5 @@ Pull requests are welcome!
 
 For major changes, please open an issue first to discuss your ideas.
 
+## License
+MIT
