@@ -58,8 +58,6 @@ cd secure-k8s-cluster-ansible
 
 ### 2️⃣ Configure Inventory
 
-Copy the example inventory file:
-
 Edit `inventory/main.yml` and replace the placeholder IPs with your actual server IPs:
 
 ```yaml
@@ -116,7 +114,7 @@ The playbook will:
 
 Scaling the cluster is extremely simple:
 
-1. Open `inventory.yml`
+1. Open `inventory/main.yml`
 2. Add the new node IP under `Server_Workers`
 
 ```yaml
@@ -130,7 +128,7 @@ Server_Workers:
 3. Run the playbook again:
 
 ```bash
-ansible-playbook -i inventory.yml kubernetes.yml
+ansible-playbook playbook/kubernetes.yml
 ```
 
 ✅ Ansible is **idempotent** — only the new node will be configured, and firewall rules will be updated automatically.
