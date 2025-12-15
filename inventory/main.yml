@@ -9,7 +9,7 @@ all:
     # Worker Servers
     Server_Worker:
       hosts:
-        # # Replace your worker server IPs 
+        # Replace worker server IPs 
         REPLACE_WITH_WORKER_1_IP:
 
         REPLACE_WITH_WORKER_2_IP:
