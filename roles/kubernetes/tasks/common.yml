@@ -31,7 +31,6 @@
     state: present
     update_cache: yes
 
-# --- 1. تنظیمات مخزن Docker (برای containerd.io) ---
 - name: Create keyrings directory
   file:
     path: /etc/apt/keyrings
@@ -55,8 +54,7 @@
       - containerd.io
     state: present
     update_cache: yes
-# --- 2. تنظیمات مخزن Kubernetes (نسخه 1.29) ---
-# نکته: گوگل مخازن قدیمی (apt.kubernetes.io) را غیرفعال کرده. باید از pkgs.k8s.io استفاده کنیم.
+
 - name: Download Kubernetes GPG key
   get_url:
     url: https://pkgs.k8s.io/core:/stable:/v1.29/deb/Release.key
@@ -74,7 +72,6 @@
   shell: |
     echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.29/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-# --- 3. نصب پکیج‌ها ---
 - name: Install Containerd, Kubernetes and Security packages
   apt:
     name:
@@ -94,7 +91,6 @@
     - kubeadm
     - kubectl
 
-# --- 4. تنظیمات Containerd ---
 - name: Configure Containerd default config
   shell: |
     mkdir -p /etc/containerd
