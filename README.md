@@ -60,7 +60,7 @@ cd secure-k8s-cluster-ansible
 
 Copy the example inventory file:
 
-Edit `inventory.yml` and replace the placeholder IPs with your actual server IPs:
+Edit `inventory/main.yml` and replace the placeholder IPs with your actual server IPs:
 
 ```yaml
 all:
